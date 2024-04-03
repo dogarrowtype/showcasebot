@@ -24,10 +24,10 @@ async def on_message(message: Message):
             if len(message.attachments) > 3:
                 await message.reply("👋 The showcase channels have a limit of 3 images per post. Please do not upload more than three images. Please remove some image\(s\) from your post so that it has no more than 3 images.")
                 return
-    try:
-         if message.channel.id in AUTOSTAR_CHANNELS and message.attachments:
+                
+        elif message.channel.id in AUTOSTAR_CHANNELS and message.attachments:
              await message.add_reaction("⭐")
-    except:
+    except Exception as e:
         print("Something went wrong.")
         pass
 
