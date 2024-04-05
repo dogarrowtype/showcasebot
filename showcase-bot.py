@@ -1,5 +1,6 @@
 import os
 import toml
+import asyncio
 
 import discord
 from discord import Intents, Embed, Message, Attachment, File, ApplicationContext
@@ -36,7 +37,7 @@ async def on_message(message: Message):
             if message.channel.id in AUTOSTAR_CHANNELS and message.embeds:
                 await message.add_reaction("⭐")
     except Exception as e:
-        print("Something went wrong with autostar.")
+        print("Something went wrong with autostar.", e)
         pass
 
 client.run(os.environ["BOT_TOKEN"])
