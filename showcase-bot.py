@@ -29,7 +29,7 @@ async def on_message(message: Message):
         pass
         
     try:        
-        if message.channel.id in AUTOSTAR_CHANNELS and message.attachments:
+        if message.channel.id in AUTOSTAR_CHANNELS and (message.attachments or message.embeds):
              await message.add_reaction("⭐")
     except Exception as e:
         print("Something went wrong with autostar.")
