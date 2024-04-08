@@ -24,7 +24,6 @@ async def on_message(message: Message):
         if message.channel.id in MONITORED_CHANNEL_IDS and message.attachments:
             if len(message.attachments) > 3:
                 await message.reply("👋 The showcase channels have a limit of 3 images per post. Please do not upload more than three images. Please remove some image\(s\) from your post so that it has no more than 3 images.")
-                return
     except Exception as e:
         print("Something went wrong with showcase number.")
         pass
