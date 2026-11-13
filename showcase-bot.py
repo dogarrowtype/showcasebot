@@ -1,42 +1,62 @@
 import os
 import toml
-import asyncio
 
 import discord
-from discord import Intents, Embed, Message, Attachment, File, ApplicationContext
+from discord import Intents, Message, app_commands
 from dotenv import load_dotenv
 
 load_dotenv()
 CONFIG = toml.load('config.toml')
-MONITORED_CHANNEL_IDS = CONFIG.get('MONITORED_CHANNEL_IDS', [])
-AUTOSTAR_CHANNELS = CONFIG.get('AUTOSTAR_CHANNELS', [])
+# Optional: while testing, list guild IDs here for near-instant command sync
+# (global command registration can take up to ~1 hour to propagate).
+DEBUG_GUILDS = CONFIG.get('DEBUG_GUILDS', [])
 
-intents = Intents.default() | Intents.message_content
-client = discord.Client(intents=intents)
+intents = Intents.default()
 
-@client.event
-async def on_ready():
-    print(f"Logged in as {client.user}!")
 
-@client.event
-async def on_message(message: Message):
+class ShowcaseBot(discord.Client):
+    def __init__(self):
+        super().__init__(intents=intents)
+        self.tree = app_commands.CommandTree(self)
+
+    async def setup_hook(self):
+        for guild_id in DEBUG_GUILDS:
+            guild = discord.Object(id=guild_id)
+            self.tree.copy_global_to(guild=guild)
+            await self.tree.sync(guild=guild)
+        await self.tree.sync()
+
+    async def on_ready(self):
+        print(f"Logged in as {self.user}!")
+
+
+client = ShowcaseBot()
+
+
+@client.tree.context_menu(name="Add free star ⭐")
+async def add_free_star(interaction: discord.Interaction, message: Message):
+    if message.author.id != interaction.user.id:
+        await interaction.response.send_message(
+            "You can only add a star to one of your own messages.", ephemeral=True
+        )
+        return
+
+    if not any((a.content_type or "").startswith("image/") for a in message.attachments):
+        await interaction.response.send_message(
+            "That message has no image attachments to star.", ephemeral=True
+        )
+        return
+
     try:
-        if message.channel.id in MONITORED_CHANNEL_IDS and message.attachments:
-            if len(message.attachments) > 3:
-                await message.reply("👋 The showcase channels have a limit of 3 images per post. Please do not upload more than three images. Please remove some image\(s\) from your post so that it has no more than 3 images.")
-    except Exception as e:
-        print("Something went wrong with showcase number.")
-        pass
-        
-    try:        
-        if message.channel.id in AUTOSTAR_CHANNELS and message.attachments:
-             await message.add_reaction("⭐")
-        else:
-            await asyncio.sleep(2)  # Wait for one second
-            if message.channel.id in AUTOSTAR_CHANNELS and message.embeds:
-                await message.add_reaction("⭐")
-    except Exception as e:
-        print("Something went wrong with autostar.", e)
-        pass
+        await message.add_reaction("⭐")
+    except discord.HTTPException as e:
+        print("Something went wrong with free star.", e)
+        await interaction.response.send_message(
+            "Couldn't add the star reaction. Try again later.", ephemeral=True
+        )
+        return
+
+    await interaction.response.send_message("⭐ Star added!", ephemeral=True)
+
 
 client.run(os.environ["BOT_TOKEN"])
